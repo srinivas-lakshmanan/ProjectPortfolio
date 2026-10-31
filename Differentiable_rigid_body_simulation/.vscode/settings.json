@@ -1,0 +1,6 @@
+{
+  "cmake.cmakePath": "C:/Program Files/CMake/bin/cmake.exe",
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": true,
+  "cmake.loggingLevel": "debug"
+}

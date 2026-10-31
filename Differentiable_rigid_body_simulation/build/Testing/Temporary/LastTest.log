@@ -1,0 +1,22 @@
+Start testing: Oct 31 11:21 Central Daylight Time
+----------------------------------------------------------
+1/1 Testing: arm_solver_tests
+1/1 Test: arm_solver_tests
+Command: "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/Debug/arm_solver_tests.exe"
+Directory: D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build
+"arm_solver_tests" start time: Oct 31 11:21 Central Daylight Time
+Output:
+----------------------------------------------------------
+AD/FD maximum absolute gradient error (epsilon=0.001): 1.01541e-10
+AD/FD maximum absolute gradient error (epsilon=0.0001): 1.3278e-12
+AD/FD maximum absolute gradient error (epsilon=1e-05): 4.9985e-12
+All arm solver tests passed.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"arm_solver_tests" end time: Oct 31 11:21 Central Daylight Time
+"arm_solver_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 31 11:21 Central Daylight Time

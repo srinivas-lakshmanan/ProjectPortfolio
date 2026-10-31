@@ -1,0 +1,56 @@
+[
+{
+  "directory": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -ID:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/include -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles\\arm_solver.dir\\src\\arm_model.cpp.obj -c D:\\Srinivas\\SrinivasLakshmanan_Resume\\ProjectPortfolio\\Differentiable_rigid_body_simulation\\src\\arm_model.cpp",
+  "file": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/src/arm_model.cpp",
+  "output": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja/CMakeFiles/arm_solver.dir/src/arm_model.cpp.obj"
+},
+{
+  "directory": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -ID:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/include -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles\\arm_solver.dir\\src\\kinematics_solver.cpp.obj -c D:\\Srinivas\\SrinivasLakshmanan_Resume\\ProjectPortfolio\\Differentiable_rigid_body_simulation\\src\\kinematics_solver.cpp",
+  "file": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/src/kinematics_solver.cpp",
+  "output": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja/CMakeFiles/arm_solver.dir/src/kinematics_solver.cpp.obj"
+},
+{
+  "directory": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -ID:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/include -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles\\arm_solver.dir\\src\\dynamics_solver.cpp.obj -c D:\\Srinivas\\SrinivasLakshmanan_Resume\\ProjectPortfolio\\Differentiable_rigid_body_simulation\\src\\dynamics_solver.cpp",
+  "file": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/src/dynamics_solver.cpp",
+  "output": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja/CMakeFiles/arm_solver.dir/src/dynamics_solver.cpp.obj"
+},
+{
+  "directory": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -ID:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/include -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles\\arm_solver.dir\\src\\rollout.cpp.obj -c D:\\Srinivas\\SrinivasLakshmanan_Resume\\ProjectPortfolio\\Differentiable_rigid_body_simulation\\src\\rollout.cpp",
+  "file": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/src/rollout.cpp",
+  "output": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja/CMakeFiles/arm_solver.dir/src/rollout.cpp.obj"
+},
+{
+  "directory": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -ID:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/include -g -std=c++17 -Wall -Wextra -Wpedantic -Werror -o CMakeFiles\\arm_solver.dir\\src\\autodiff_rollout.cpp.obj -c D:\\Srinivas\\SrinivasLakshmanan_Resume\\ProjectPortfolio\\Differentiable_rigid_body_simulation\\src\\autodiff_rollout.cpp",
+  "file": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/src/autodiff_rollout.cpp",
+  "output": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja/CMakeFiles/arm_solver.dir/src/autodiff_rollout.cpp.obj"
+},
+{
+  "directory": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -ID:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/include -g -std=c++17 -o CMakeFiles\\arm_demo.dir\\app\\main.cpp.obj -c D:\\Srinivas\\SrinivasLakshmanan_Resume\\ProjectPortfolio\\Differentiable_rigid_body_simulation\\app\\main.cpp",
+  "file": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/app/main.cpp",
+  "output": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja/CMakeFiles/arm_demo.dir/app/main.cpp.obj"
+},
+{
+  "directory": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -ID:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/include -g -std=c++17 -o CMakeFiles\\pendulum_demo.dir\\app\\pendulum.cpp.obj -c D:\\Srinivas\\SrinivasLakshmanan_Resume\\ProjectPortfolio\\Differentiable_rigid_body_simulation\\app\\pendulum.cpp",
+  "file": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/app/pendulum.cpp",
+  "output": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja/CMakeFiles/pendulum_demo.dir/app/pendulum.cpp.obj"
+},
+{
+  "directory": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -ID:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/include -g -std=c++17 -o CMakeFiles\\arm_solver_tests.dir\\tests\\arm_solver_tests.cpp.obj -c D:\\Srinivas\\SrinivasLakshmanan_Resume\\ProjectPortfolio\\Differentiable_rigid_body_simulation\\tests\\arm_solver_tests.cpp",
+  "file": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/tests/arm_solver_tests.cpp",
+  "output": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja/CMakeFiles/arm_solver_tests.dir/tests/arm_solver_tests.cpp.obj"
+},
+{
+  "directory": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -ID:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/include -g -std=c++17 -o CMakeFiles\\eight_stage_tests.dir\\tests\\eight_stage_tests.cpp.obj -c D:\\Srinivas\\SrinivasLakshmanan_Resume\\ProjectPortfolio\\Differentiable_rigid_body_simulation\\tests\\eight_stage_tests.cpp",
+  "file": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/tests/eight_stage_tests.cpp",
+  "output": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation/build/presets-gcc-ninja/CMakeFiles/eight_stage_tests.dir/tests/eight_stage_tests.cpp.obj"
+}
+]
