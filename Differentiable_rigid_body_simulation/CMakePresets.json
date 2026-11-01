@@ -3,17 +3,34 @@
   "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
   "configurePresets": [
     {
+      "name": "portable-debug",
+      "displayName": "Portable core, demos and tests (Debug)",
+      "binaryDir": "${sourceDir}/build/portable-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "ARM_BUILD_GUI": "OFF",
+        "ARM_BUILD_DEMOS": "ON",
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "portable-gui",
+      "displayName": "Portable interactive GUI (Debug)",
+      "inherits": "portable-debug",
+      "binaryDir": "${sourceDir}/build/portable-gui",
+      "cacheVariables": {
+        "ARM_BUILD_GUI": "ON"
+      }
+    },
+    {
       "name": "windows-gcc-ninja",
       "displayName": "Windows GCC UCRT64 Ninja Debug",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/presets-gcc-ninja",
-      "environment": {
-        "PATH": "C:/msys64/ucrt64/bin;$penv{PATH}"
-      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_COMPILER": "C:/msys64/ucrt64/bin/g++.exe",
-        "CMAKE_MAKE_PROGRAM": "C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe"
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
       },
       "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
     },
@@ -27,20 +44,38 @@
     }
   ],
   "buildPresets": [
+    { "name": "portable-debug", "configurePreset": "portable-debug", "configuration": "Debug" },
+    { "name": "portable-gui", "configurePreset": "portable-gui", "configuration": "Debug" },
     { "name": "windows-gcc-debug", "configurePreset": "windows-gcc-ninja" },
     { "name": "windows-debug", "configurePreset": "windows-vs2022", "configuration": "Debug" }
   ],
   "testPresets": [
     {
+      "name": "portable-debug",
+      "configurePreset": "portable-debug",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    {
+      "name": "portable-gui",
+      "configurePreset": "portable-gui",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    {
       "name": "windows-gcc-debug",
       "configurePreset": "windows-gcc-ninja",
-      "output": { "outputOnFailure": true }
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
     },
     {
       "name": "windows-debug",
       "configurePreset": "windows-vs2022",
       "configuration": "Debug",
-      "output": { "outputOnFailure": true }
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
     }
   ]
 }

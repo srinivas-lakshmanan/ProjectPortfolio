@@ -92,21 +92,96 @@ Pivot decisions use primal values; singular systems are not valid gradient point
 
 ## Build and Run
 
-The CMake project requires a C++17 compiler. In VS Code, use CMake Tools to select
-a compiler/configure preset, build, and run CTest. The optional
-`windows-vs2022` preset requires CMake 3.21+ and Visual Studio 2022 with the
-Desktop development with C++ workload and Windows SDK. Its matching build/test
-preset is `windows-debug`; it uses a separate directory under `build`.
-The `windows-gcc-ninja` configure preset uses installed MSYS2 UCRT64 GCC and
-VS-bundled Ninja; matching build/test preset is `windows-gcc-debug`. Its tool
-paths are machine-specific. Select a configure preset explicitly in CMake Tools:
-no active preset means configuration cannot run. Without presets, the project
-retains its CMake 3.16 minimum.
+Open a terminal in this folder. Install CMake 3.21+ (for presets) and a C++17
+compiler: GCC/Clang on Linux/macOS, or Visual Studio's Desktop development with
+C++ workload and Windows SDK on Windows. Put CMake and your build tools on
+`PATH`; for Ninja/MSVC, use a Visual Studio developer terminal. No particular
+drive, checkout location, or IDE installation path is required.
+
+The portable core preset builds the library, both CLI demos, and tests without
+downloading dependencies. CMake selects the platform's default generator and
+compiler (or honors your `CMAKE_GENERATOR`, `CC`, and `CXX` environment settings).
+
+```sh
+cmake --preset portable-debug
+cmake --build --preset portable-debug
+ctest --preset portable-debug
+```
+
+To include the interactive GUI:
+
+```sh
+cmake --preset portable-gui
+cmake --build --preset portable-gui
+ctest --preset portable-gui
+```
+
+The GUI requires Git, network access on first configure, OpenGL development
+libraries, and a C compiler for GLFW. CMake fetches pinned GLFW/ImGui versions
+into the build directory. On Linux, install your distribution's GLFW build
+prerequisites (X11 and/or Wayland development packages as well as OpenGL).
+On macOS, install the Xcode command-line tools. A graphical desktop is needed
+to run the GUI, but not to run the solver tests.
+
+Executables are in `build/<preset>/` for single-configuration generators and
+`build/<preset>/Debug/` for Visual Studio or other multi-configuration generators.
+On Windows they have the `.exe` suffix. Run `arm_demo`, `pendulum_demo`, or
+`arm_gui` from that directory; none needs the source folder as its working
+directory. ImGui stores its window layout in `imgui.ini` in the working directory.
+
+Without presets, CMake 3.16+ remains supported:
+
+```sh
+cmake -S . -B build/core -DARM_BUILD_GUI=OFF
+cmake --build build/core --config Debug
+ctest --test-dir build/core -C Debug --output-on-failure
+```
+
+With CMake older than 3.20, run `ctest -C Debug --output-on-failure` from
+`build/core` instead of using `--test-dir`.
+
+Build components can be selected independently:
+
+| Option | Default | Component |
+| --- | --- | --- |
+| `ARM_BUILD_GUI` | `ON` | Interactive application and its fetched dependencies |
+| `ARM_BUILD_DEMOS` | `ON` | Command-line demonstrations |
+| `BUILD_TESTING` | `ON` | CTest regression executables |
+
+For a library-only build:
+
+```sh
+cmake -S . -B build/library -DARM_BUILD_GUI=OFF -DARM_BUILD_DEMOS=OFF -DBUILD_TESTING=OFF
+cmake --build build/library --config Debug
+```
+
+Other CMake projects can use
+`add_subdirectory` on this folder and link their targets to `arm_solver`;
+its public headers and C++17 requirement are supplied by the target.
+
+In VS Code, open this folder and use CMake Tools to select `portable-debug` or
+`portable-gui`, build, and run CTest. The optional `windows-vs2022` configure
+preset explicitly selects Visual Studio 2022 x64; its build/test preset is
+`windows-debug`. `windows-gcc-ninja` selects GCC and Ninja from `PATH` (including
+both `gcc` and `g++` for GUI builds); its build/test preset is `windows-gcc-debug`.
+Use an MSYS2 UCRT64 environment or add your own UCRT64 tools to `PATH` first.
+
+Keep machine-local overrides in an untracked `CMakeUserPresets.json` or VS Code
+user settings, not shared project settings. Generated `build` directories are
+ignored and must be regenerated after moving or copying the project: CMake
+caches and generated build rules legitimately contain absolute paths.
 
 Executables:
 
 - `arm_demo`: three-link kinematics and a short controlled rollout.
 - `pendulum_demo`: a smooth single-link pendulum trajectory, energy, and torque gradient.
+- `arm_gui`: interactive ImGui application for editing the model (joints, masses,
+  inertias, gravity), configuring coordinate constraints and smooth plane contacts,
+  feeding initial states and constant joint efforts, and watching live RK4 rollouts
+  in a 3D wireframe viewport with per-joint trajectory plots. Built when
+  `ARM_BUILD_GUI` is `ON` (the default); the first configure downloads Dear ImGui
+  and GLFW via `FetchContent`, so it needs network access. Pass
+  `-DARM_BUILD_GUI=OFF` for an offline, dependency-free build.
 - `arm_solver_tests`: analytical, integration, and gradient regression tests.
 - `eight_stage_tests`: independent multi-link physics, constraints/contact and full gradients.
 

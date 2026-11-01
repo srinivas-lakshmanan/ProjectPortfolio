@@ -1,5 +1,5 @@
 {
-  "cmake.cmakePath": "C:/Program Files/CMake/bin/cmake.exe",
+  "cmake.sourceDirectory": "D:/Srinivas/SrinivasLakshmanan_Resume/ProjectPortfolio/Differentiable_rigid_body_simulation",
   "cmake.useCMakePresets": "always",
   "cmake.configureOnOpen": true,
   "cmake.loggingLevel": "debug"
