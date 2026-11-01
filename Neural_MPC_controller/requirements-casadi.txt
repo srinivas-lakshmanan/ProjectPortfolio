@@ -1,0 +1,2 @@
+# The wheel supplies C++ headers, libraries, and a CMake package as well as Python bindings.
+casadi>=3.7,<4
