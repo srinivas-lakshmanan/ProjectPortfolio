@@ -7,8 +7,8 @@
                 double radius = 5
             }
             dictionary Perspective = {
-                double3 position = (0.6724267989543953, 0.6724267989543979, 0.6724269022459113)
-                double3 target = (-3.9780386429377756e-8, -3.978038354279789e-8, 7.956076875093032e-8)
+                double3 position = (0.7177657391775324, 0.7596832762709551, 0.7754293022598487)
+                double3 target = (-0.03319370583858894, 0.008723831254834113, 0.02446987516780108)
             }
             dictionary Right = {
                 double3 position = (0, -5, 0)
@@ -268,7 +268,7 @@ def Xform "World"
                 prepend apiSchemas = ["NodeGraphNodeAPI"]
             )
             {
-                custom token inputs:value
+                custom token inputs:value = "wheel_left_joint"
                 token node:type = "omni.graph.nodes.ConstantToken"
                 int node:typeVersion = 1
                 uniform token ui:nodegraph:node:expansionState = "open"
@@ -279,7 +279,7 @@ def Xform "World"
                 prepend apiSchemas = ["NodeGraphNodeAPI"]
             )
             {
-                custom token inputs:value
+                custom token inputs:value = "wheel_right_joint"
                 token node:type = "omni.graph.nodes.ConstantToken"
                 int node:typeVersion = 1
                 uniform token ui:nodegraph:node:expansionState = "open"
@@ -309,11 +309,45 @@ def Xform "World"
                 custom uint64 inputs:queueSize
                 custom vector3d inputs:robotFront
                 custom double inputs:timeStamp
+                prepend double inputs:timeStamp.connect = </World/tb3_burger_processed/ROS_Drive/on_playback_tick.outputs:time>
                 custom string inputs:topicName
                 token node:type = "isaacsim.ros2.bridge.ROS2PublishOdometry"
                 int node:typeVersion = 1
                 uniform token ui:nodegraph:node:expansionState = "open"
-                uniform float2 ui:nodegraph:node:pos = (1302.1143, -72.35842)
+                uniform float2 ui:nodegraph:node:pos = (1440.8556, -237.526)
+            }
+
+            def OmniGraphNode "articulation_controller" (
+                prepend apiSchemas = ["NodeGraphNodeAPI"]
+            )
+            {
+                custom double[] inputs:effortCommand
+                custom uint inputs:execIn (
+                    customData = {
+                        bool isExecution = 1
+                    }
+                )
+                prepend uint inputs:execIn.connect = </World/tb3_burger_processed/ROS_Drive/on_playback_tick.outputs:tick>
+                custom int[] inputs:jointIndices
+                custom token[] inputs:jointNames
+                prepend token[] inputs:jointNames.connect = </World/tb3_burger_processed/ROS_Drive/make_array.outputs:array>
+                custom double[] inputs:positionCommand
+                custom string inputs:robotPath
+                custom rel inputs:targetPrim = </World/tb3_burger_processed> (
+                    customData = {
+                        dictionary omni = {
+                            dictionary graph = {
+                                string relType = "target"
+                            }
+                        }
+                    }
+                )
+                custom double[] inputs:velocityCommand
+                prepend double[] inputs:velocityCommand.connect = </World/tb3_burger_processed/ROS_Drive/differential_controller.outputs:velocityCommand>
+                token node:type = "isaacsim.core.nodes.IsaacArticulationController"
+                int node:typeVersion = 1
+                uniform token ui:nodegraph:node:expansionState = "open"
+                uniform float2 ui:nodegraph:node:pos = (1451.7128, 177.1358)
             }
         }
     }
@@ -474,10 +508,10 @@ over "OmniverseKit_Persp" (
     float exposure:time = 0.02
     float focalLength = 18.147562
     float focusDistance = 400
-    custom uniform vector3d omni:kit:centerOfInterest = (0, 0, -1.1646774397953021)
+    custom uniform vector3d omni:kit:centerOfInterest = (0, 0, -1.3006999028431798)
     float3 xformOp:rotateXYZ = (54.73561, -0, 135)
     float3 xformOp:scale = (1, 1, 1)
-    double3 xformOp:translate = (0.6724267989543953, 0.6724267989543979, 0.6724269022459113)
+    double3 xformOp:translate = (0.7177657391775324, 0.7596832762709551, 0.7754293022598487)
     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
 }
 
@@ -560,254 +594,5 @@ over "OmniverseKit_Top" (
     float3 xformOp:scale = (1, 1, 1)
     double3 xformOp:translate = (0, 0, 5)
     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
-}
-
-def "ROS_Drive"
-{
-    def OmniGraph "ROS_Odometry"
-    {
-        token evaluationMode = "Automatic"
-        token evaluator:type = "execution"
-        token fabricCacheBacking = "StageWithoutHistory"
-        int2 fileFormatVersion = (1, 9)
-        token pipelineStage = "pipelineStageSimulation"
-
-        def OmniGraphNode "OnPlaybackTick"
-        {
-            token node:type = "omni.graph.action.OnPlaybackTick"
-            int node:typeVersion = 2
-            custom double outputs:deltaSeconds
-            custom double outputs:frame
-            custom uint outputs:tick (
-                customData = {
-                    bool isExecution = 1
-                }
-            )
-            custom double outputs:time
-        }
-
-        def OmniGraphNode "Context"
-        {
-            custom uchar inputs:domain_id
-            custom bool inputs:useDomainIDEnvVar
-            token node:type = "isaacsim.ros2.bridge.ROS2Context"
-            int node:typeVersion = 2
-            custom uint64 outputs:context
-        }
-
-        def OmniGraphNode "ReadSimTime"
-        {
-            custom uint64 inputs:referenceTimeDenominator
-            custom int64 inputs:referenceTimeNumerator
-            custom bool inputs:resetOnStop = 1
-            token node:type = "isaacsim.core.nodes.IsaacReadSimulationTime"
-            int node:typeVersion = 1
-            custom double outputs:simulationTime
-        }
-
-        def OmniGraphNode "TFWorld2Odom"
-        {
-            custom string inputs:childFrameId = "odom"
-            custom uint64 inputs:context
-            prepend uint64 inputs:context.connect = </ROS_Drive/ROS_Odometry/Context.outputs:context>
-            custom uint inputs:execIn (
-                customData = {
-                    bool isExecution = 1
-                }
-            )
-            prepend uint inputs:execIn.connect = </ROS_Drive/ROS_Odometry/OnPlaybackTick.outputs:tick>
-            custom string inputs:nodeNamespace = ""
-            custom string inputs:parentFrameId = "world"
-            custom string inputs:qosProfile
-            custom uint64 inputs:queueSize
-            custom quatd inputs:rotation
-            custom bool inputs:staticPublisher
-            custom double inputs:timeStamp
-            prepend double inputs:timeStamp.connect = </ROS_Drive/ROS_Odometry/ReadSimTime.outputs:simulationTime>
-            custom string inputs:topicName
-            custom vector3d inputs:translation
-            token node:type = "isaacsim.ros2.bridge.ROS2PublishRawTransformTree"
-            int node:typeVersion = 1
-        }
-
-        def OmniGraphNode "TFOdom2Robot"
-        {
-            custom string inputs:childFrameId = "base_link"
-            custom uint64 inputs:context
-            prepend uint64 inputs:context.connect = </ROS_Drive/ROS_Odometry/Context.outputs:context>
-            custom uint inputs:execIn (
-                customData = {
-                    bool isExecution = 1
-                }
-            )
-            prepend uint inputs:execIn.connect = </ROS_Drive/ROS_Odometry/OnPlaybackTick.outputs:tick>
-            custom string inputs:nodeNamespace = ""
-            custom string inputs:parentFrameId
-            custom string inputs:qosProfile
-            custom uint64 inputs:queueSize
-            custom quatd inputs:rotation
-            prepend quatd inputs:rotation.connect = </ROS_Drive/ROS_Odometry/ComputeOdometry.outputs:orientation>
-            custom bool inputs:staticPublisher
-            custom double inputs:timeStamp
-            prepend double inputs:timeStamp.connect = </ROS_Drive/ROS_Odometry/ReadSimTime.outputs:simulationTime>
-            custom string inputs:topicName
-            custom vector3d inputs:translation
-            prepend vector3d inputs:translation.connect = </ROS_Drive/ROS_Odometry/ComputeOdometry.outputs:position>
-            token node:type = "isaacsim.ros2.bridge.ROS2PublishRawTransformTree"
-            int node:typeVersion = 1
-        }
-
-        def OmniGraphNode "ComputeOdometry"
-        {
-            custom rel inputs:chassisPrim = </World/tb3_burger_processed> (
-                customData = {
-                    dictionary omni = {
-                        dictionary graph = {
-                            string relType = "target"
-                        }
-                    }
-                }
-            )
-            custom uint inputs:execIn (
-                customData = {
-                    bool isExecution = 1
-                }
-            )
-            prepend uint inputs:execIn.connect = </ROS_Drive/ROS_Odometry/OnPlaybackTick.outputs:tick>
-            token node:type = "isaacsim.core.nodes.IsaacComputeOdometry"
-            int node:typeVersion = 1
-            custom vector3d outputs:angularAcceleration
-            custom vector3d outputs:angularVelocity
-            custom uint outputs:execOut (
-                customData = {
-                    bool isExecution = 1
-                }
-            )
-            custom vector3d outputs:globalLinearAcceleration
-            custom vector3d outputs:globalLinearVelocity
-            custom vector3d outputs:linearAcceleration
-            custom vector3d outputs:linearVelocity
-            custom quatd outputs:orientation
-            custom vector3d outputs:position
-        }
-
-        def OmniGraphNode "PublisherOdometry"
-        {
-            custom vector3d inputs:angularVelocity
-            prepend vector3d inputs:angularVelocity.connect = </ROS_Drive/ROS_Odometry/ComputeOdometry.outputs:angularVelocity>
-            custom string inputs:chassisFrameId = "base_link"
-            custom uint64 inputs:context
-            prepend uint64 inputs:context.connect = </ROS_Drive/ROS_Odometry/Context.outputs:context>
-            custom uint inputs:execIn (
-                customData = {
-                    bool isExecution = 1
-                }
-            )
-            prepend uint inputs:execIn.connect = </ROS_Drive/ROS_Odometry/ComputeOdometry.outputs:execOut>
-            custom vector3d inputs:linearVelocity
-            prepend vector3d inputs:linearVelocity.connect = </ROS_Drive/ROS_Odometry/ComputeOdometry.outputs:linearVelocity>
-            custom string inputs:nodeNamespace = ""
-            custom string inputs:odomFrameId
-            custom quatd inputs:orientation
-            prepend quatd inputs:orientation.connect = </ROS_Drive/ROS_Odometry/ComputeOdometry.outputs:orientation>
-            custom vector3d inputs:position
-            prepend vector3d inputs:position.connect = </ROS_Drive/ROS_Odometry/ComputeOdometry.outputs:position>
-            custom bool inputs:publishRawVelocities
-            custom string inputs:qosProfile
-            custom uint64 inputs:queueSize
-            custom vector3d inputs:robotFront
-            custom double inputs:timeStamp
-            prepend double inputs:timeStamp.connect = </ROS_Drive/ROS_Odometry/ReadSimTime.outputs:simulationTime>
-            custom string inputs:topicName = "/odom"
-            token node:type = "isaacsim.ros2.bridge.ROS2PublishOdometry"
-            int node:typeVersion = 1
-        }
-
-        def OmniGraphNode "ComputeTFRobot"
-        {
-            custom uint inputs:execIn (
-                customData = {
-                    bool isExecution = 1
-                }
-            )
-            prepend uint inputs:execIn.connect = </ROS_Drive/ROS_Odometry/OnPlaybackTick.outputs:tick>
-            custom rel inputs:parentPrim = </World/tb3_burger_processed/Geometry/base_footprint/base_link> (
-                customData = {
-                    dictionary omni = {
-                        dictionary graph = {
-                            string relType = "target"
-                        }
-                    }
-                }
-            )
-            custom rel inputs:targetPrims = </World/tb3_burger_processed> (
-                customData = {
-                    dictionary omni = {
-                        dictionary graph = {
-                            string relType = "target"
-                        }
-                    }
-                }
-            )
-            token node:type = "isaacsim.core.nodes.IsaacComputeTransformTree"
-            int node:typeVersion = 1
-            custom token[] outputs:childFrames
-            custom uint outputs:execOut (
-                customData = {
-                    bool isExecution = 1
-                }
-            )
-            custom double4[] outputs:orientations
-            custom token[] outputs:parentFrames
-            custom double3[] outputs:translations
-        }
-
-        def OmniGraphNode "TFRobot"
-        {
-            custom token[] inputs:childFrames
-            prepend token[] inputs:childFrames.connect = </ROS_Drive/ROS_Odometry/ComputeTFRobot.outputs:childFrames>
-            custom uint64 inputs:context
-            prepend uint64 inputs:context.connect = </ROS_Drive/ROS_Odometry/Context.outputs:context>
-            custom uint inputs:execIn (
-                customData = {
-                    bool isExecution = 1
-                }
-            )
-            prepend uint inputs:execIn.connect = </ROS_Drive/ROS_Odometry/ComputeTFRobot.outputs:execOut>
-            custom string inputs:nodeNamespace = ""
-            custom double4[] inputs:orientations
-            prepend double4[] inputs:orientations.connect = </ROS_Drive/ROS_Odometry/ComputeTFRobot.outputs:orientations>
-            custom token[] inputs:parentFrames
-            prepend token[] inputs:parentFrames.connect = </ROS_Drive/ROS_Odometry/ComputeTFRobot.outputs:parentFrames>
-            custom rel inputs:parentPrim (
-                customData = {
-                    dictionary omni = {
-                        dictionary graph = {
-                            string relType = "target"
-                        }
-                    }
-                }
-            )
-            custom string inputs:qosProfile
-            custom uint64 inputs:queueSize
-            custom bool inputs:staticPublisher
-            custom rel inputs:targetPrims (
-                customData = {
-                    dictionary omni = {
-                        dictionary graph = {
-                            string relType = "target"
-                        }
-                    }
-                }
-            )
-            custom double inputs:timeStamp
-            prepend double inputs:timeStamp.connect = </ROS_Drive/ROS_Odometry/ReadSimTime.outputs:simulationTime>
-            custom string inputs:topicName = "/tf"
-            custom double3[] inputs:translations
-            prepend double3[] inputs:translations.connect = </ROS_Drive/ROS_Odometry/ComputeTFRobot.outputs:translations>
-            token node:type = "isaacsim.ros2.bridge.ROS2PublishTransformTree"
-            int node:typeVersion = 1
-        }
-    }
 }
 

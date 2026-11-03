@@ -1,0 +1,91 @@
+ISAAC SIM + ROS 2 MPC: QUICK-START CHECKLIST
+=========================================
+
+1. START ISAAC SIM
+-----------------
+- Open your saved robot scene.
+- Enable the ROS 2 Bridge.
+- Confirm the drive graph connects /cmd_vel through the Differential
+  Controller to the Articulation Controller.
+- Keep only ONE /odom publisher.
+- Connect simulation time to the odometry publisher's timestamp input.
+- For the circular reference, start near x = 2 m, y = 0 m, yaw = 90 degrees.
+- Check simulator drive limits: the reference speed is 0.4 m/s.
+- Press Play.
+
+2. OPEN YOUR ROS-ENABLED DEVELOPER TERMINAL
+-----------------------------------------
+Use the same ROS_DOMAIN_ID as Isaac Sim and a ROS-compatible Python.
+Replace the example path below with your project directory.
+
+PowerShell:
+    cd "C:\path\to\Isaac_sim_Turtlebot_mpc"
+
+Windows Command Prompt / Developer Command Prompt:
+    cd /d "C:\path\to\Isaac_sim_Turtlebot_mpc"
+
+3. CHECK CONNECTIVITY
+---------------------
+    ros2 topic list
+    ros2 topic info /odom
+    ros2 topic echo /odom --once
+
+Verify:
+- Exactly one /odom publisher.
+- Odometry frame_id matches the controller's default: odom.
+- Odometry timestamps advance during playback.
+  Run ros2 topic echo /odom to inspect successive messages; Ctrl+C to exit.
+
+4. START MPC
+------------
+Run from the project root:
+
+    python -m ros.command_publisher
+
+This sends motion commands to the simulated robot.
+Do not run another /cmd_vel publisher at the same time.
+
+5. OPTIONAL MONITORING
+----------------------
+In another ROS-enabled terminal:
+
+    ros2 topic echo /cmd_vel
+    ros2 topic hz /odom
+
+6. STOP
+-------
+- Press Ctrl+C in the controller terminal to attempt a final zero command.
+- Then stop Isaac Sim.
+- A shutdown message is not guaranteed to arrive. Configure an independent
+  command timeout/watchdog in the simulator or downstream controller.
+
+QUICK TROUBLESHOOTING
+---------------------
+ROS imports fail:
+    Use your ROS-enabled terminal and its compatible Python interpreter.
+
+Stale odometry:
+    Check Play mode and advancing odometry timestamps.
+    Stop warnings report callback age, advancing-pose age, duplicate timestamp
+    count, and last solve duration.
+
+Repeated time-reset warnings:
+    Check for duplicate /odom publishers:
+        ros2 topic info /odom --verbose
+
+Commands present but no motion:
+    Check Articulation Controller execution and velocity-command connections,
+    robot articulation root, and wheel joint names/order.
+
+Robot cannot keep up with the circle:
+    Reference speed is 0.4 m/s. Check simulator drive limits.
+
+Different odometry frame:
+    Supply the actual frame name (this does not perform a TF transformation):
+        python -m ros.command_publisher --ros-args -p odom_frame:=YOUR_FRAME
+
+FIRST-TIME DEPENDENCY SETUP ONLY
+--------------------------------
+In the ROS-compatible Python environment, from the project root:
+
+    python -m pip install -r requirements.txt
