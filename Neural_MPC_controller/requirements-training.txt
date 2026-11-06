@@ -1,0 +1,2 @@
+# PyTorch is used for policy training and CPU inference/checkpoint creation.
+torch>=2.2,<3

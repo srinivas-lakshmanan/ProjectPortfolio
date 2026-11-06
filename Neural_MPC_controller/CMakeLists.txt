@@ -40,6 +40,10 @@ if(VEHICLE_MODEL_WITH_CASADI)
 
     add_executable(mpc_maneuvers src/mpc_maneuvers.cpp)
     target_link_libraries(mpc_maneuvers PRIVATE vehicle_model_casadi)
+    add_executable(mpc_maneuver_data_dump src/mpc_maneuver_data_dump.cpp)
+    target_link_libraries(mpc_maneuver_data_dump PRIVATE vehicle_model_casadi)
+    add_executable(mpc_expert src/mpc_expert.cpp)
+    target_link_libraries(mpc_expert PRIVATE vehicle_model_casadi)
     add_executable(test_maneuver_reference test/test_maneuver_reference.cpp)
     target_link_libraries(test_maneuver_reference PRIVATE vehicle_model_casadi)
     add_test(NAME maneuver_reference COMMAND test_maneuver_reference)
@@ -58,7 +62,8 @@ if(VEHICLE_MODEL_WITH_CASADI)
             get_target_property(CASADI_RUNTIME_LOCATION casadi::casadi IMPORTED_LOCATION)
         endif()
         get_filename_component(CASADI_RUNTIME_DIR "${CASADI_RUNTIME_LOCATION}" DIRECTORY)
-        foreach(target test_casadi_vehicle_model test_maneuver_reference mpc_maneuvers)
+        foreach(target test_casadi_vehicle_model test_maneuver_reference mpc_maneuvers
+                       mpc_maneuver_data_dump mpc_expert)
             add_custom_command(TARGET ${target} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     $<TARGET_FILE:casadi::casadi>

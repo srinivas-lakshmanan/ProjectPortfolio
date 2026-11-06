@@ -153,6 +153,8 @@ public:
 
     const TrackingMpcConfig& config() const { return config_; }
 
+    void reset_warm_start() { warm_inputs_.clear(); }
+
     TrackingMpcResult solve(const State& measured, const Input& previous,
                             const TrackingReference& reference) {
         if (reference.states.size() != static_cast<std::size_t>(config_.horizon + 1) ||

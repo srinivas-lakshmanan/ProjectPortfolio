@@ -1,7 +1,27 @@
-# Neural MPC Controller — Double-Track Vehicle Model
+# Neural MPC Controller — Vehicle Dynamics, Imitation Learning, and DAgger
 
-A full 4-wheel (double-track) vehicle dynamics model in modern C++ (header-only),
-designed to be coupled with a CasADi-based MPC controller.
+A research workflow for learning a neural controller from a nonlinear model
+predictive controller (MPC). A header-only C++ double-track vehicle model
+supports a CasADi/IPOPT MPC expert; Python/PyTorch provides behavior cloning,
+inference, actuator-limited closed-loop simulation, and DAgger retraining.
+
+## Workflow overview
+
+1. **Generate expert data:** `mpc_maneuver_data_dump` simulates randomized
+   step-steer and double-lane-change episodes and logs state/reference features
+   with optimized MPC command labels.
+2. **Train:** `train_mpc_policy.py` fits an MLP with episode-wise splits,
+   body-relative features, train-only normalization, and validation selection.
+3. **Predict and evaluate:** `predict_mpc_policy.py` compares predictions with
+   recorded labels; `rollout_mpc_policy.py` feeds simulated states back into
+   the policy and applies actuator and slew-rate constraints.
+4. **Improve through DAgger:** `dagger_mpc_policy.py` collects expert labels
+   at learner-visited states through `mpc_expert`, aggregates training data,
+   and retrains while preserving the original held-out episode splits.
+
+The original `mpc_maneuvers` executable remains a separate MPC acceptance
+baseline. The neural workflow is implemented and smoke-tested; it is **not
+yet a validated replacement for MPC**.
 
 ## Model overview
 
@@ -83,9 +103,9 @@ This wrapper does not add costs, constraints, a solver, or driving scenarios.
 The tracking controller and maneuver runner below supply those separately.
 Existing tire and load-transfer approximations are unchanged.
 
-## Layout
+## Project structure
 
-```
+```text
 include/vehicle_model/
   vehicle_params.hpp       # physical parameters (mid-size car defaults)
   smooth_math.hpp          # eps-regularized abs / sign / division
@@ -95,12 +115,31 @@ include/vehicle_model/
   casadi_vehicle_model.hpp # continuous/discrete CasADi functions and Jacobians
   tracking_mpc.hpp         # IPOPT nonlinear multiple-shooting tracking controller
   maneuver_reference.hpp  # configurable step-steer and double-lane-change references
-src/main.cpp               # demo: step steer + torque-vectoring scenarios (CSV output)
-src/mpc_maneuvers.cpp       # closed-loop MPC scenarios, CLI, CSVs and acceptance metrics
-test/test_double_track_model.cpp  # physics sanity tests
-test/test_casadi_vehicle_model.cpp # wrapper parity, Jacobians, MX composition
-test/test_maneuver_reference.cpp   # reference profiles and controller contracts
+src/
+  main.cpp                 # open-loop step-steer and torque-vectoring demos
+  mpc_maneuvers.cpp        # MPC baseline scenarios, CSVs, and acceptance metrics
+  mpc_maneuver_data_dump.cpp # randomized expert dataset generator
+  mpc_expert.cpp          # persistent stdin/stdout MPC expert for DAgger
+scripts/
+  train_mpc_policy.py     # training, shared features, and MpcPolicy inference class
+  predict_mpc_policy.py   # offline CSV prediction and expert-label comparison
+  rollout_mpc_policy.py   # default Python plant and constrained closed-loop rollout
+  dagger_mpc_policy.py    # learner rollouts, expert queries, aggregate retraining
+test/
+  test_double_track_model.cpp  # physics sanity tests
+  test_casadi_vehicle_model.cpp # wrapper parity, Jacobians, MX composition
+  test_maneuver_reference.cpp   # references and MPC controller contracts
+  test_train_mpc_policy.py      # parsing, features, inference, limits, feedback
+  test_dagger_mpc_policy.py     # learner-driven collection and split isolation
+CMakeLists.txt             # C++ targets; CasADi targets are opt-in
+requirements-casadi.txt    # optional CasADi SDK/Python bindings dependency
+requirements-training.txt  # optional PyTorch training/inference dependency
+README.md
 ```
+
+Generated datasets, checkpoints, metrics, and rollout files can be kept in
+`build-mpc/`; they are not source files. DAgger creates per-round datasets,
+checkpoints, metrics, and a summary in its specified output directory.
 
 ## Build & run
 
@@ -232,9 +271,150 @@ files are cleaned up by CasADi on normal exit. Override the compiler with
 No real-time solve-time guarantee is claimed. Thread limits in the examples
 and CTest reduce small-problem BLAS overhead without changing global settings.
 
-### Outputs and acceptance
+### Generating neural-network training data
 
-`--output-dir` must already exist; default is the current directory.
+`mpc_maneuver_data_dump` is a separate executable; it does not modify or invoke
+the closed-loop acceptance runner. Each episode randomly selects a maneuver
+when `--scenario all` is used, then samples speed, turn direction and magnitude,
+lane-shift direction and width, and initial lateral position error. The seed
+makes episode generation repeatable. Bounds, episode count, MPC horizon and
+integration settings can be adjusted with `--help`.
+
+```powershell
+$env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
+$env:OPENBLAS_NUM_THREADS = "1"
+$env:OMP_NUM_THREADS = "1"
+.\build-mpc\mpc_maneuver_data_dump.exe --episodes 20 --seed 42 `
+  --scenario all --output-file .\build-mpc\training_data.csv
+```
+
+The CSV has one row per successful MPC decision: measured 10-state plant
+state, previous 5-input command, complete `horizon+1` state and `horizon`
+input reference preview, and the expert's first optimized 5-input command.
+Episode/maneuver identifiers, sampled episode settings, and solver
+iterations/time/constraint violation are also included. The initial state
+includes the sampled lateral offset, and the plant is advanced with the labeled
+MPC command before the next row. Episodes reset the optimizer warm start.
+Failed solves or nonfinite plant states terminate generation with a nonzero
+exit status; partial output may remain. Keep train/validation/test splits
+episode-wise to avoid leaking adjacent closed-loop samples across splits.
+
+### Training a neural policy
+
+Install the optional PyTorch dependency in the active Python environment:
+
+```powershell
+python -m pip install -r requirements-training.txt
+python scripts\train_mpc_policy.py --csv .\build-mpc\training_data.csv `
+  --output .\build-mpc\mpc_policy.pt --epochs 300 --seed 42
+```
+
+The trainer requires at least three distinct episodes and assigns whole
+episodes to train, validation, and test sets. The MLP learns the MPC's
+five-component first input from the current body velocities/wheel speeds,
+previous input, and reference preview. Reference positions and heading are
+expressed relative to the measured pose, avoiding dependence on global map
+coordinates. Feature/target scaling is computed from the training split only.
+Training stops after validation loss stops improving; the best checkpoint is
+saved with model dimensions, feature ordering, normalization values, split
+episode IDs, and held-out test MAE/RMSE in physical units. A sibling
+`.metrics.json` file records the same run summary.
+
+The reported test metrics are only a useful generalization estimate when the
+dataset covers enough independent episodes and operating conditions. With
+fewer than five held-out episodes the script warns that the test result is a
+smoke check. This policy is a research baseline, not a safety-certified or
+real-time replacement for the constrained MPC.
+
+### Using the trained policy
+
+The Python inference wrapper can predict the five actuator commands from a
+data-dump-shaped sample. Replay predictions and compare them to expert labels
+with:
+
+```powershell
+python scripts\predict_mpc_policy.py --checkpoint .\build-mpc\mpc_policy.pt `
+  --csv .\build-mpc\training_data.csv --output .\build-mpc\policy_predictions.csv
+```
+
+For Python integration, import `MpcPolicy` from
+`scripts\train_mpc_policy.py` and call `predict(sample)` with the current
+`state_*`, `previous_*`, `reference_<step>_*`, and
+`reference_input_<step>_*` fields. Predictions are raw network outputs: this
+wrapper does not enforce steering/torque bounds or slew limits. CSV replay is
+offline imitation evaluation, not closed-loop vehicle validation; a
+closed-loop neural-policy rollout remains necessary before considering MPC
+replacement.
+
+Run a closed-loop rollout against the reference schedules in the dataset with:
+
+```powershell
+python scripts\rollout_mpc_policy.py --checkpoint .\build-mpc\mpc_policy.pt `
+  --csv .\build-mpc\training_data.csv --output .\build-mpc\policy_rollout.csv
+```
+
+The rollout resets each episode to its recorded initial plant state, but feeds
+the evolving simulated state and previous applied command back into the policy.
+It advances the same default double-track equations with RK4 and the dataset's
+per-step reference preview. Policy outputs are projected onto steering/torque
+bounds and slew-rate limits before being applied. The CSV records states,
+references, requested/applied controls, and tracking errors; a sibling summary
+JSON reports tracking and actuator/rate peaks. Pass `--episode ID` to run one
+episode, or override `--rk4-substeps`, `--steering-limit`,
+`--steering-rate-limit`, `--torque-limit`, and `--torque-rate-limit`.
+
+This is an offline simulation using the project's nominal default vehicle
+parameters. It is not a hardware safety claim; compare rollout metrics against
+the MPC baseline and validate wider operating envelopes before considering
+deployment.
+
+### DAgger: expert labels on learner-visited states
+
+Build the expert adapter with the same CasADi toolchain as the existing MPC:
+
+```powershell
+$env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
+cmake -S . -B build-mpc
+cmake --build build-mpc --target mpc_expert --parallel 4
+.\.venv\Scripts\python.exe scripts\dagger_mpc_policy.py `
+  --checkpoint .\build-mpc\mpc_policy.pt --csv .\build-mpc\training_data.csv `
+  --expert .\build-mpc\mpc_expert.exe --output-dir .\build-mpc\dagger `
+  --rounds 3 --epochs 300
+```
+
+Use the original dataset and its trained checkpoint, and a new or empty output
+directory. Each round rolls out only the checkpoint's **training episodes**.
+The constrained neural policy drives the default Python plant; at every
+visited state the persistent C++ process queries the exact `TrackingMpc`
+implementation using the same reference preview and previous **applied**
+command. Its optimized action is stored as the label, never substituted for
+the learner's plant command. This is pure learner-rollout DAgger (no
+expert/learner action mixing).
+
+New labels are added to all previously collected data, and the existing MLP
+trainer retrains from scratch using the initial architecture. Episode IDs
+retain their original split assignments, so validation/test data are unchanged
+and no DAgger states leak into those splits. Each round saves an aggregate
+CSV, a policy checkpoint, and training metrics; `dagger_summary.json` records
+the rounds and final policy path. Aggregate rows include `dagger_iteration`
+and, for learner rollouts, `applied_*` controls to distinguish labels from
+actions used to advance the plant.
+
+All episodes must have the same uniform sample interval; the horizon is taken
+from the checkpoint. This implementation uses default vehicle parameters,
+MPC weights, and actuator/rate limits. Match `--rk4-substeps` to the original
+dataset (default 50). `--max-iterations`, `--jit false`, and
+`--expert-timeout` control oracle execution. Solver failure, timeout, or
+nonfinite plant state aborts explicitly: no fallback or unlabeled rows are
+silently accepted. DAgger does not itself establish improved tracking; evaluate
+the final checkpoint with the closed-loop rollout on held-out scenarios.
+
+Run the focused Python tests with
+`.\.venv\Scripts\python.exe -m unittest test.test_train_mpc_policy test.test_dagger_mpc_policy -v`.
+
+### MPC baseline outputs and acceptance
+
+For `mpc_maneuvers`, `--output-dir` must already exist; default is the current directory.
 Each run overwrites only its own trajectory and summary:
 
 - `step_steer_mpc.csv`, `double_lane_change_mpc.csv`: states, full references,
@@ -263,9 +443,10 @@ rollover safety, or validated tire behavior. The existing planar model has no
 roll/pitch/suspension dynamics. Minimum normal load is reported for inspection,
 not a hard MPC contact-load constraint.
 
-### Verified results
+### Verified MPC baseline results
 
-Both complete defaults passed on the documented Windows toolchain:
+Both complete MPC defaults passed on the documented Windows toolchain.
+These results are for the physics-based MPC, not the trained neural policy:
 
 | Scenario | Max lateral error | Lateral RMS | Max heading error |
 |---|---:|---:|---:|
@@ -287,3 +468,72 @@ closed-loop simulation tests, not a real-time implementation.
 - ISO vehicle coordinates: x forward, y left, z up; positive yaw = counter-clockwise.
 - Wheel order everywhere: `FL, FR, RL, RR`.
 - Positive `delta` steers left; positive right-side torque surplus yaws left.
+
+## Workflow limitations
+
+- **Limited operating coverage:** the dataset generator randomizes speed,
+  maneuver direction/amplitude, lane width, and initial lateral offset within
+  two maneuver families. It does not currently randomize the full initial
+  dynamic state, sensor noise, actuator delays, road friction, or vehicle
+  parameters. Generalization outside the collected envelope is unproven.
+- **Nominal simulation, not physical validation:** the Python plant reproduces
+  the C++ default equations, but agreement between implementations does not
+  establish real-vehicle accuracy. The model uses simplified tires and
+  quasi-static load transfer, with no roll, pitch, or suspension dynamics.
+- **Actuator constraints are not safety guarantees:** the rollout enforces
+  command bounds and slew rates, not stability, collision avoidance, tire
+  contact, or recovery feasibility. Raw `MpcPolicy.predict` outputs are
+  unconstrained; limiting happens in the rollout/DAgger application layer.
+- **Neural validation remains preliminary:** small smoke runs establish that
+  collection, training, inference, and feedback work together. Low prediction
+  MAE/RMSE does not demonstrate successful full-length closed-loop tracking.
+  The neural rollout reports metrics but has no MPC-equivalent acceptance gate.
+- **Reference and configuration coupling:** rollout and DAgger use recorded
+  reference previews, and the network expects its trained horizon/feature
+  ordering. Checkpoints do not fully bind sample interval, vehicle parameters,
+  integration settings, or actuator configuration; users must keep these
+  consistent. DAgger currently uses default MPC costs and limits.
+- **DAgger has a bounded scope:** it reuses training episode reference schedules,
+  performs pure learner rollouts, and retrains from scratch each round.
+  Expert failure aborts collection. Fixed held-out expert trajectories avoid
+  split leakage but do not test every state distribution induced by the learner.
+  Additional DAgger rounds do not guarantee better tracking.
+- **Rollout duration accounting:** the rollout logs one row per recorded
+  decision and advances between those rows; it does not log a terminal state
+  after applying the final recorded decision. Its metrics therefore omit that
+  last control interval.
+- **Deployment is not established:** inference runs in Python/PyTorch on CPU;
+  no embedded/C++ neural runtime, target-hardware worst-case latency benchmark,
+  supervisory fallback, or hardware-in-the-loop validation is provided.
+
+## Future improvements for the neural controller
+
+1. **Broaden data and reference coverage.** Add initial heading, yaw-rate,
+   lateral-velocity, and wheel-slip perturbations; vary maneuver timings and
+   curvature profiles. Include friction, mass, tire, noise, and delay variation
+   once their effects can be modeled and tested.
+2. **Evaluate full closed-loop episodes against MPC.** Include terminal states
+   and use identical unseen initial conditions/reference schedules for both
+   controllers. Add pass/fail criteria for lateral/heading/speed errors,
+   failures, oscillation, saturation, and rate limiting. Reserve an independent
+   final test suite rather than choosing DAgger rounds using test results.
+3. **Strengthen DAgger collection.** Extend training reference schedules and
+   disturbances, track failure/coverage statistics, and consider a controlled
+   expert-to-learner action-mixing schedule when pure learner rollouts become
+   infeasible. Compare each round on fixed validation rollouts.
+4. **Improve policy training based on measured errors.** Tune model capacity,
+   normalization floors for nearly constant features, output/loss scaling,
+   and regularization. Consider predicting command increments or incorporating
+   differentiable actuator projection into training to reduce post-limiter
+   mismatch; validate rather than assume an improvement.
+5. **Add configuration and dataset provenance.** Store sample time, limits,
+   plant parameters, expert costs/tolerances, and dataset identity with
+   checkpoints. Reject incompatible runtime configurations and preserve a
+   shared source of truth for C++/Python plant parameters.
+6. **Add supervision before deployment.** Define a validated operating envelope,
+   monitor state/constraint violations, and switch to a validated controller
+   when the policy becomes unreliable. Actuator clipping alone is insufficient.
+7. **Benchmark and validate deployment.** Measure end-to-end worst-case latency
+   and memory on target hardware; consider ONNX/C++ inference only when needed.
+   Follow simulation testing with model-mismatch, hardware-in-the-loop, and
+   appropriately supervised physical validation.
